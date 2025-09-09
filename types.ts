@@ -1,12 +1,14 @@
 export enum EditTool {
   None = 'none',
   Resize = 'resize',
+  BrightnessContrast = 'brightness-contrast',
   RemoveBg = 'remove-bg',
   Retouch = 'retouch',
   Inpaint = 'inpaint',
   Replace = 'replace',
   Style = 'style',
   Custom = 'custom',
+  Text = 'text',
 }
 
 export interface HistoryState {
@@ -17,6 +19,9 @@ export interface HistoryState {
 }
 
 export type StylePreset = 'Impressionist Painting' | 'Pencil Sketch' | 'Anime' | 'Cyberpunk' | 'Vintage Film';
+
+export type TextPosition = 'top-left' | 'top-center' | 'top-right' | 'middle-left' | 'middle-center' | 'middle-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
+
 
 // New types for batch editing
 export interface BatchStep {
@@ -30,6 +35,16 @@ export interface BatchStep {
     // For Resize tool
     width?: number;
     height?: number;
+    // For Text tool
+    text?: string;
+    fontSize?: number;
+    color?: string;
+    position?: TextPosition;
+    fontFamily?: string;
+    strokeColor?: string;
+    strokeWidth?: number;
+    shadowColor?: string;
+    shadowBlur?: number;
   };
 }
 

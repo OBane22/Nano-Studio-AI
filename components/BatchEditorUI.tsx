@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { BatchImage, BatchStep, EditTool, StylePreset, OutputFormat } from '../types';
+import { BatchImage, BatchStep, EditTool, StylePreset, OutputFormat, TextPosition } from '../types';
 import { getPromptForTool, editImageWithAI } from '../services/geminiService';
-import { resizeImage } from '../services/resizeService';
+import { resizeImage, drawTextOnImage, convertImageFormat } from '../services/resizeService';
 import { AddIcon, TrashIcon, DownloadIcon } from './icons';
 import Loader from './Loader';
 
@@ -11,8 +11,11 @@ interface BatchEditorUIProps {
 }
 
 const stylePresets: StylePreset[] = ['Impressionist Painting', 'Pencil Sketch', 'Anime', 'Cyberpunk', 'Vintage Film'];
+const textPositions: TextPosition[] = ['top-left', 'top-center', 'top-right', 'middle-left', 'middle-center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right'];
+const fontFamilies: string[] = ['Arial', 'Helvetica', 'Times New Roman', 'Courier New', 'Georgia', 'Verdana'];
 const toolOptions = [
   { id: EditTool.Resize, name: 'Resize' },
+  { id: EditTool.Text, name: 'Text' },
   { id: EditTool.RemoveBg, name: 'Remove BG' },
   { id: EditTool.Retouch, name: 'Retouch' },
   { id: EditTool.Inpaint, name: 'Inpaint' },
@@ -24,10 +27,23 @@ const toolOptions = [
 
 const AddStepForm: React.FC<{onAddStep: (step: BatchStep) => void}> = ({ onAddStep }) => {
     const [tool, setTool] = useState<EditTool>(EditTool.Resize);
+    // AI/General state
     const [prompt, setPrompt] = useState('');
     const [style, setStyle] = useState<StylePreset>(stylePresets[0]);
+    // Resize state
     const [resizeWidth, setResizeWidth] = useState(1024);
     const [resizeHeight, setResizeHeight] = useState(1024);
+    // Text state
+    const [text, setText] = useState('Your Text');
+    const [fontSize, setFontSize] = useState(48);
+    const [color, setColor] = useState('#FFFFFF');
+    const [position, setPosition] = useState<TextPosition>('middle-center');
+    const [fontFamily, setFontFamily] = useState('Arial');
+    const [strokeColor, setStrokeColor] = useState('#000000');
+    const [strokeWidth, setStrokeWidth] = useState(0);
+    const [shadowColor, setShadowColor] = useState('#000000');
+    const [shadowBlur, setShadowBlur] = useState(0);
+
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -41,6 +57,17 @@ const AddStepForm: React.FC<{onAddStep: (step: BatchStep) => void}> = ({ onAddSt
         if (tool === EditTool.Resize) {
             params.width = resizeWidth;
             params.height = resizeHeight;
+        }
+        if (tool === EditTool.Text) {
+            params.text = text;
+            params.fontSize = fontSize;
+            params.color = color;
+            params.position = position;
+            params.fontFamily = fontFamily;
+            params.strokeColor = strokeColor;
+            params.strokeWidth = strokeWidth;
+            params.shadowColor = shadowColor;
+            params.shadowBlur = shadowBlur;
         }
 
         onAddStep({
@@ -63,6 +90,34 @@ const AddStepForm: React.FC<{onAddStep: (step: BatchStep) => void}> = ({ onAddSt
                     <input type="number" value={resizeHeight} onChange={e => setResizeHeight(parseInt(e.target.value, 10) || 0)} placeholder="Height" required className="w-full p-2 bg-[#233554] border border-[#112240] rounded-md" />
                  </div>
             )}
+             {tool === EditTool.Text && (
+                <div className="space-y-2">
+                     <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Enter text..." required className="w-full h-20 p-2 bg-[#233554] border border-[#112240] rounded-md resize-none" />
+                     <select value={fontFamily} onChange={e => setFontFamily(e.target.value)} className="w-full p-2 bg-[#233554] border border-[#112240] rounded-md">
+                        {fontFamilies.map(f => <option key={f} value={f}>{f}</option>)}
+                     </select>
+                     <div className="flex items-center gap-2">
+                         <input type="number" value={fontSize} onChange={e => setFontSize(parseInt(e.target.value, 10) || 0)} placeholder="Size" className="w-1/2 p-2 bg-[#233554] border border-[#112240] rounded-md" />
+                         <input type="color" value={color} onChange={e => setColor(e.target.value)} className="w-1/2 h-10 p-1 bg-[#233554] border border-[#112240] rounded-md cursor-pointer" />
+                     </div>
+                     <select value={position} onChange={e => setPosition(e.target.value as TextPosition)} className="w-full p-2 bg-[#233554] border border-[#112240] rounded-md">
+                        {textPositions.map(pos => <option key={pos} value={pos}>{pos.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}</option>)}
+                    </select>
+                    {/* Stroke and Shadow controls */}
+                    <div className="border-t border-[#233554] pt-2 space-y-2">
+                         <div className="flex items-center gap-2">
+                            <label className="text-sm w-20">Stroke</label>
+                            <input type="number" min="0" value={strokeWidth} onChange={e => setStrokeWidth(parseInt(e.target.value, 10) || 0)} placeholder="Width" className="w-1/2 p-2 bg-[#233554] border border-[#112240] rounded-md" />
+                            <input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="w-1/2 h-10 p-1 bg-[#233554] border border-[#112240] rounded-md cursor-pointer" />
+                         </div>
+                         <div className="flex items-center gap-2">
+                            <label className="text-sm w-20">Shadow</label>
+                            <input type="number" min="0" value={shadowBlur} onChange={e => setShadowBlur(parseInt(e.target.value, 10) || 0)} placeholder="Blur" className="w-1/2 p-2 bg-[#233554] border border-[#112240] rounded-md" />
+                            <input type="color" value={shadowColor} onChange={e => setShadowColor(e.target.value)} className="w-1/2 h-10 p-1 bg-[#233554] border border-[#112240] rounded-md cursor-pointer" />
+                         </div>
+                    </div>
+                </div>
+            )}
             {[EditTool.Inpaint, EditTool.Replace, EditTool.Custom].includes(tool) && (
                  <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Enter prompt..." required className="w-full h-20 p-2 bg-[#233554] border border-[#112240] rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-[#64FFDA]" />
             )}
@@ -83,6 +138,7 @@ const BatchEditorUI: React.FC<BatchEditorUIProps> = ({ initialImages, onCancel }
     const [images, setImages] = useState<BatchImage[]>(initialImages);
     const [recipe, setRecipe] = useState<BatchStep[]>([]);
     const [outputFormat, setOutputFormat] = useState<OutputFormat>('image/png');
+    const [jpegQuality, setJpegQuality] = useState<number>(90);
     const [customName, setCustomName] = useState<string>('edited-image');
     const [startNumber, setStartNumber] = useState<number>(1);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -115,6 +171,20 @@ const BatchEditorUI: React.FC<BatchEditorUIProps> = ({ initialImages, onCancel }
                         if (step.params.width && step.params.height) {
                            currentImageData = await resizeImage(currentImageData, currentMimeType, { width: step.params.width, height: step.params.height });
                         }
+                    } else if (step.tool === EditTool.Text) {
+                         if (step.params.text && step.params.fontSize && step.params.color && step.params.position) {
+                            currentImageData = await drawTextOnImage(currentImageData, currentMimeType, {
+                                text: step.params.text,
+                                fontSize: step.params.fontSize,
+                                color: step.params.color,
+                                position: step.params.position,
+                                fontFamily: step.params.fontFamily,
+                                strokeColor: step.params.strokeColor,
+                                strokeWidth: step.params.strokeWidth,
+                                shadowColor: step.params.shadowColor,
+                                shadowBlur: step.params.shadowBlur,
+                            });
+                        }
                     } else {
                         const prompt = getPromptForTool(step.tool, step.params);
                         const result = await editImageWithAI(currentImageData, currentMimeType, prompt);
@@ -139,21 +209,32 @@ const BatchEditorUI: React.FC<BatchEditorUIProps> = ({ initialImages, onCancel }
         setIsProcessing(false);
     }, [images, recipe]);
 
-    const handleDownload = (image: BatchImage, index: number) => {
-        if (!image.processedData) return;
-        const link = document.createElement('a');
-        const mimeType = image.processedType || outputFormat;
-        link.href = `data:${mimeType};base64,${image.processedData}`;
-        const extension = mimeType.split('/')[1] || 'png';
-        const sanitizedName = customName.replace(/[^a-zA-Z0-9_-]/g, '') || 'image';
-        const finalStartNumber = Math.max(1, startNumber);
-        link.download = `${sanitizedName}-${finalStartNumber + index}.${extension}`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
+    const handleDownload = useCallback(async (image: BatchImage, index: number) => {
+        if (!image.processedData || !image.processedType) return;
+        try {
+            const finalData = await convertImageFormat(
+                image.processedData,
+                image.processedType,
+                outputFormat,
+                outputFormat === 'image/jpeg' ? { quality: jpegQuality / 100 } : undefined
+            );
 
-    const handleDownloadAll = () => {
+            const link = document.createElement('a');
+            link.href = `data:${outputFormat};base64,${finalData}`;
+            const extension = outputFormat.split('/')[1] || 'png';
+            const sanitizedName = customName.replace(/[^a-zA-Z0-9_-]/g, '') || 'image';
+            const finalStartNumber = Math.max(1, startNumber);
+            link.download = `${sanitizedName}-${finalStartNumber + index}.${extension}`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (err) {
+            console.error("Failed to download image after conversion:", err);
+            // In a real app, you might want to set an error state here
+        }
+    }, [outputFormat, jpegQuality, customName, startNumber]);
+
+    const handleDownloadAll = useCallback(() => {
         const doneImages = images.filter(img => img.status === 'done');
         doneImages.forEach((image, i) => {
             const originalIndex = images.findIndex(img => img.id === image.id);
@@ -162,12 +243,18 @@ const BatchEditorUI: React.FC<BatchEditorUIProps> = ({ initialImages, onCancel }
                 handleDownload(image, originalIndex);
             }, i * 300);
         });
-    };
+    }, [images, handleDownload]);
 
     const progress = images.filter(img => img.status === 'done' || img.status === 'error').length / images.length * 100;
 
     const getStepDescription = (step: BatchStep) => {
         if (step.tool === EditTool.Resize) return `${step.params.width}x${step.params.height}`;
+        if (step.tool === EditTool.Text) {
+            let description = `"${step.params.text}" (${step.params.fontFamily || 'Default'})`;
+            if ((step.params.strokeWidth || 0) > 0) description += ' +Stroke';
+            if ((step.params.shadowBlur || 0) > 0) description += ' +Shadow';
+            return description;
+        }
         return step.params.style || step.params.prompt || 'No params';
     }
 
@@ -235,6 +322,25 @@ const BatchEditorUI: React.FC<BatchEditorUIProps> = ({ initialImages, onCancel }
                             <option value="image/webp">WebP</option>
                         </select>
                     </div>
+
+                    {outputFormat === 'image/jpeg' && (
+                        <div className="mt-2">
+                            <label htmlFor="jpegQuality" className="block text-sm font-medium text-[#ccd6f6] mb-1">JPEG Quality</label>
+                            <div className="flex items-center gap-3">
+                                <input
+                                    id="jpegQuality"
+                                    type="range"
+                                    min="1"
+                                    max="100"
+                                    value={jpegQuality}
+                                    onChange={e => setJpegQuality(parseInt(e.target.value, 10))}
+                                    className="w-full h-2 bg-[#233554] rounded-lg appearance-none cursor-pointer"
+                                    title={`Quality: ${jpegQuality}`}
+                                />
+                                <span className="w-12 text-center text-sm font-mono p-1 bg-[#112240] rounded text-[#ccd6f6]">{jpegQuality}</span>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="mt-2">
                         <label htmlFor="customName" className="block text-sm font-medium text-[#ccd6f6] mb-1">File Name</label>
