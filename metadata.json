@@ -1,0 +1,5 @@
+{
+  "name": "Nano Studio AI",
+  "description": "An AI-powered photo editing application using Gemini's Nano Banana model. It features a suite of intelligent editing tools including background removal, object replacement, AI retouching, style transfer, and more, all within a clean, modern, and responsive interface.",
+  "requestFramePermissions": []
+}
