@@ -3,6 +3,7 @@ export enum EditTool {
   Resize = 'resize',
   BrightnessContrast = 'brightness-contrast',
   RemoveBg = 'remove-bg',
+  AddBg = 'add-bg',
   Retouch = 'retouch',
   Inpaint = 'inpaint',
   Replace = 'replace',

@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import { UploadIcon, BatchIcon, TrashIcon } from './icons';
 import { Project } from '../types';
+import AdComponent from './AdComponent';
 
 interface UploadScreenProps {
   onImagesSelected: (images: { data: string, type: string }[], mode: 'single' | 'batch') => void;
@@ -96,6 +97,10 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onImagesSelected, setError,
           <p className="mt-2 text-[#8892b0]">Apply the same edits to multiple images at once.</p>
           <input id="batch-file-upload" type="file" multiple className="sr-only" onChange={e => handleFiles(e.target.files, 'batch')} accept="image/png, image/jpeg, image/webp" />
         </div>
+      </div>
+      
+      <div className="w-full max-w-4xl mt-8">
+        <AdComponent adSlot="1234567890" className="h-24" />
       </div>
       
       {projects.length > 0 && (

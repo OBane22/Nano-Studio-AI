@@ -4,6 +4,7 @@ import { getPromptForTool, editImageWithAI } from '../services/geminiService';
 import { resizeImage, drawTextOnImage, convertImageFormat } from '../services/resizeService';
 import { AddIcon, TrashIcon, DownloadIcon } from './icons';
 import Loader from './Loader';
+import AdComponent from './AdComponent';
 
 interface BatchEditorUIProps {
     initialImages: BatchImage[];
@@ -313,6 +314,7 @@ const BatchEditorUI: React.FC<BatchEditorUIProps> = ({ initialImages, onCancel }
 
                 {/* Right Panel: Controls */}
                 <aside className="w-full md:w-64 p-4 bg-[#112240]/50 border-l border-[#233554] flex flex-col gap-4">
+                    <AdComponent adSlot="1234567892" className="h-48" />
                     <h2 className="text-lg font-semibold">Output</h2>
                      <div>
                         <label htmlFor="format" className="block text-sm font-medium text-[#ccd6f6] mb-1">Format</label>

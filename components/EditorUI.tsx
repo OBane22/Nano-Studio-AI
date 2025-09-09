@@ -4,9 +4,10 @@ import { getPromptForTool, editImageWithAI } from '../services/geminiService';
 import { resizeImage, getImageDimensions, drawTextOnImage, applyBrightnessContrast } from '../services/resizeService';
 import { 
   RemoveBgIcon, RetouchIcon, InpaintIcon, ReplaceIcon, StyleIcon, CustomIcon, 
-  UndoIcon, RedoIcon, CompareIcon, DownloadIcon, ResizeIcon, LockIcon, SaveIcon, TextIcon, BrightnessContrastIcon
+  UndoIcon, RedoIcon, CompareIcon, DownloadIcon, ResizeIcon, LockIcon, SaveIcon, TextIcon, BrightnessContrastIcon, AddBgIcon
 } from './icons';
 import Loader from './Loader';
+import AdComponent from './AdComponent';
 
 interface EditorUIProps {
   originalImage: { data: string; type: string };
@@ -23,6 +24,7 @@ const tools = [
   { id: EditTool.BrightnessContrast, name: 'Adjust', icon: <BrightnessContrastIcon /> },
   { id: EditTool.Text, name: 'Text', icon: <TextIcon /> },
   { id: EditTool.RemoveBg, name: 'Remove BG', icon: <RemoveBgIcon /> },
+  { id: EditTool.AddBg, name: 'Add BG', icon: <AddBgIcon /> },
   { id: EditTool.Retouch, name: 'Retouch', icon: <RetouchIcon /> },
   { id: EditTool.Inpaint, name: 'Inpaint', icon: <InpaintIcon /> },
   { id: EditTool.Replace, name: 'Replace', icon: <ReplaceIcon /> },
@@ -91,7 +93,7 @@ const EditorUI: React.FC<EditorUIProps> = ({
 
 
   const handleApply = useCallback(async () => {
-     if ([EditTool.Inpaint, EditTool.Replace, EditTool.Custom].includes(activeTool) && !prompt.trim()) {
+     if ([EditTool.Inpaint, EditTool.Replace, EditTool.Custom, EditTool.AddBg].includes(activeTool) && !prompt.trim()) {
         setError("Prompt cannot be empty for this tool.");
         return;
     }
@@ -385,6 +387,7 @@ const EditorUI: React.FC<EditorUIProps> = ({
       case EditTool.Inpaint:
       case EditTool.Replace:
       case EditTool.Custom:
+      case EditTool.AddBg:
         return (
           <div className="flex items-center gap-4 w-full">
             <input
@@ -445,6 +448,7 @@ const EditorUI: React.FC<EditorUIProps> = ({
             </button>
           ))}
           <div className="flex-grow"></div>
+           <AdComponent adSlot="1234567891" className="w-16 h-48" />
            <button onClick={handleUndo} disabled={currentHistoryIndex <= 0} title="Undo" className="p-2 rounded-md hover:bg-[#233554] disabled:text-gray-600 disabled:cursor-not-allowed"><UndoIcon /></button>
            <button onClick={handleRedo} disabled={currentHistoryIndex >= history.length - 1} title="Redo" className="p-2 rounded-md hover:bg-[#233554] disabled:text-gray-600 disabled:cursor-not-allowed"><RedoIcon /></button>
            <button onMouseDown={() => setShowComparison(true)} onMouseUp={() => setShowComparison(false)} onMouseLeave={() => setShowComparison(false)} title="Hold to Compare with Original" className="p-2 rounded-md hover:bg-[#233554]"><CompareIcon /></button>

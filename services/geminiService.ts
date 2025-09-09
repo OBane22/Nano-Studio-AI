@@ -54,6 +54,8 @@ export const getPromptForTool = (tool: EditTool, params: { prompt?: string; styl
   switch (tool) {
     case EditTool.RemoveBg:
       return 'Remove the background and make it transparent.';
+    case EditTool.AddBg:
+        return `Add a new background to this image based on the following description: "${params.prompt}". The background should be realistic and blend seamlessly with the existing foreground subject(s) in terms of lighting, perspective, and style. Do not alter the foreground.`;
     case EditTool.Retouch:
       return 'Perform a professional photographic retouch. Smooth skin, remove blemishes, and balance the lighting to be more flattering.';
     case EditTool.Inpaint:
